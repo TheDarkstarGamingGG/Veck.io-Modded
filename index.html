@@ -1,48 +1,46 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Veck.io Launcher</title>
+    <title>Veck.io Overlay Environment</title>
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
+    
     <style>
-        body { background: #111; color: #0f0; font-family: monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        button { background: #0f0; color: #000; border: none; padding: 20px 40px; font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 10px; box-shadow: 0 0 20px #0f0; }
-        button:active { transform: scale(0.95); }
-        .warning { margin-top: 20px; color: #ff0; text-align: center; max-width: 80%; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+        #proxy-frame { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
 
-    <h1>VECK.IO TEST ENVIRONMENT</h1>
-    <button onclick="launchGame()">LAUNCH EXPLOIT</button>
-    
-    <p class="warning">NOTE: If a popup blocker appears, you MUST allow it for the exploit to load Eruda.</p>
+    <div id="container"></div>
 
     <script>
-        function launchGame() {
-            // 1. Open the real game in a new window
-            const gameWindow = window.open("https://veck.io", "_blank");
+        // 2. The Proxy Logic
+        const proxy = "https://cors-anywhere.herokuapp.com/";
+        const target = "https://veck.io/";
 
-            // 2. The "Pipe" Logic
-            // We wait for the window to load, then try to inject Eruda
-            const injectEruda = `
-                (function() {
-                    var script = document.createElement('script');
-                    script.src = 'https://cdn.jsdelivr.net/npm/eruda';
-                    document.body.appendChild(script);
-                    script.onload = function () { eruda.init(); };
-                    console.log('ERUDA INJECTED VIA LAUNCHER');
-                })();
-            `;
+        fetch(proxy + target)
+            .then(r => r.text())
+            .then(html => {
+                // 3. Rewrite the internal links so the game can find its files
+                let moddedHtml = html.replace('<head>', `<head><base href="${target}">`);
+                
+                // 4. Create a "fake" document inside our page
+                const blob = new Blob([moddedHtml], { type: 'text/html' });
+                const blobUrl = URL.createObjectURL(blob);
+                
+                const iframe = document.createElement('iframe');
+                iframe.src = blobUrl;
+                iframe.id = "proxy-frame";
+                iframe.style.width = "100%";
+                iframe.style.height = "100%";
+                document.getElementById('container').appendChild(iframe);
 
-            // 3. Attempt to run the code in the new window
-            // This is the part that might be blocked by browser security
-            setTimeout(() => {
-                try {
-                    gameWindow.eval(injectEruda);
-                } catch (e) {
-                    console.error("Security Blocked the Injection. Trying backup method...");
-                }
-            }, 3000); 
-        }
+                console.log("GAME INJECTED. OPEN ERUDA TO START MODDING.");
+            })
+            .catch(err => {
+                document.body.innerHTML = "<h2 style='color:red; text-align:center;'>PROXY ERROR: Did you go to cors-anywhere.herokuapp.com/corsdemo and click the button?</h2>";
+            });
     </script>
 </body>
 </html>
