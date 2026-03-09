@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: veck-god-mode
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
