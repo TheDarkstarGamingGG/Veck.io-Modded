@@ -1,18 +1,69 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Veck Test</title>
+    <title>Veck.io - Advanced Test Environment</title>
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
+    
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: blue; }
-        iframe { 
-            width: 100%; 
-            height: 100%; 
-            border: 20px solid red !important; 
-            box-sizing: border-box;
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+        #game-container { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
-    <iframe src="https://veck.io/"></iframe>
+    <div id="game-container"></div>
+
+    <script>
+        // 2. The Proxy Logic
+        // We use a public proxy to fetch Veck.io so we can "touch" the code
+        const proxyUrl = "https://api.allorigins.win/get?url=" + encodeURIComponent("https://veck.io/");
+
+        fetch(proxyUrl)
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('game-container');
+                let html = data.contents;
+
+                // 3. THE INJECTION: We tell the game it is at Veck.io even though it's on Render
+                html = html.replace('<head>', '<head><base href="https://veck.io/">');
+
+                // 4. THE MODS: We inject the "Master Control" variables
+                const modScript = `
+                    <script>
+                        window.MOD_ENABLED = true;
+                        console.log("TEST ENVIRONMENT LOADED: READY FOR INJECTION");
+                        
+                        // This function will wait for the game engine to start
+                        function startModLoop() {
+                            if (window.unityInstance) {
+                                // FLY & NOCLIP ATTEMPT
+                                // We use a loop to keep gravity at 0
+                                setInterval(() => {
+                                    window.unityInstance.SendMessage('Player', 'SetGravity', 0);
+                                    window.unityInstance.SendMessage('Player', 'SetCollision', false);
+                                    window.unityInstance.SendMessage('Player', 'SetVisible', false);
+                                }, 1000);
+                            } else {
+                                setTimeout(startModLoop, 1000);
+                            }
+                        }
+                        startModLoop();
+                    <\/script>
+                `;
+                
+                html = html.replace('</body>', modScript + '</body>');
+
+                // Create a "Blob" to run the modded game as if it were a local file
+                const blob = new Blob([html], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                
+                const iframe = document.createElement('iframe');
+                iframe.src = url;
+                iframe.style.width = "100%";
+                iframe.style.height = "100%";
+                iframe.style.border = "none";
+                container.appendChild(iframe);
+            });
+    </script>
 </body>
 </html>
