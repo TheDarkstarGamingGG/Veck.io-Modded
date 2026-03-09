@@ -1,0 +1,15 @@
+/* Unintended Feature: High Visibility / Wallhack Style */
+canvas {
+    filter: contrast(150%) brightness(110%); /* Makes players pop */
+}
+
+/* This targets the Unity game container specifically */
+#unity-container {
+    border: 5px solid red; /* Proof that YOUR code is running */
+}
+
+/* If the game uses standard web layers for UI, this hides ads */
+#videoad, .adsbygoogle {
+    display: none !important;
+    visibility: hidden !important;
+}
