@@ -1,12 +1,48 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Veck Test</title>
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
-    <style>body, iframe { margin: 0; width: 100vw; height: 100vh; border: none; }</style>
+    <title>Veck.io Launcher</title>
+    <style>
+        body { background: #111; color: #0f0; font-family: monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        button { background: #0f0; color: #000; border: none; padding: 20px 40px; font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 10px; box-shadow: 0 0 20px #0f0; }
+        button:active { transform: scale(0.95); }
+        .warning { margin-top: 20px; color: #ff0; text-align: center; max-width: 80%; }
+    </style>
 </head>
 <body>
-    <iframe src="https://veck.io/"></iframe>
+
+    <h1>VECK.IO TEST ENVIRONMENT</h1>
+    <button onclick="launchGame()">LAUNCH EXPLOIT</button>
+    
+    <p class="warning">NOTE: If a popup blocker appears, you MUST allow it for the exploit to load Eruda.</p>
+
+    <script>
+        function launchGame() {
+            // 1. Open the real game in a new window
+            const gameWindow = window.open("https://veck.io", "_blank");
+
+            // 2. The "Pipe" Logic
+            // We wait for the window to load, then try to inject Eruda
+            const injectEruda = `
+                (function() {
+                    var script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/eruda';
+                    document.body.appendChild(script);
+                    script.onload = function () { eruda.init(); };
+                    console.log('ERUDA INJECTED VIA LAUNCHER');
+                })();
+            `;
+
+            // 3. Attempt to run the code in the new window
+            // This is the part that might be blocked by browser security
+            setTimeout(() => {
+                try {
+                    gameWindow.eval(injectEruda);
+                } catch (e) {
+                    console.error("Security Blocked the Injection. Trying backup method...");
+                }
+            }, 3000); 
+        }
+    </script>
 </body>
 </html>
