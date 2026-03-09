@@ -1,56 +1,66 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>VECK_OS_V6</title>
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
+    <title>VECK_GHOST_V8</title>
 </head>
-<body style="margin:0; background:#000;">
+<body style="margin:0; background:#000; overflow:hidden;">
+    <div id="loader" style="color:#0f0; font-family:monospace; padding:20px;">
+        SYNCHRONIZING WITH VECK SERVERS...
+    </div>
     <script>
         (async function() {
-            // 1. The Proxy - using a different one to avoid '403' errors
-            const proxy = "https://api.allorigins.win/get?url=";
+            // Using AllOrigins RAW to get the actual clean source
+            const proxy = "https://api.allorigins.win/raw?url=";
             const target = "https://veck.io/";
 
             try {
                 const response = await fetch(proxy + encodeURIComponent(target));
-                const data = await response.json();
-                let html = data.contents;
+                const html = await response.text();
 
-                // 2. THE FIX: Force the game to find its 'Brain' on the REAL site
-                // This stops the 99% hang by pointing directly to the official files
-                html = html.replace('<head>', `<head><base href="https://veck.io/">`);
+                // 1. THE BRAIN FIX: Force absolute paths for everything
+                let moddedHtml = html.replace('<head>', `<head><base href="https://veck.io/">`);
 
-                // 3. THE INJECTOR: This runs INSIDE the game's origin
-                const hackerScript = `
+                // 2. THE XHR HIJACK: This forces the game's internal requests to use our proxy
+                // This is what usually kills the 99% hang.
+                const hijackScript = `
+                    <script src="https://cdn.jsdelivr.net/npm/eruda"><\/script>
                     <script>
-                        console.log("HACKER CORE LOADED");
+                        eruda.init();
+                        (function() {
+                            const oldXHR = window.XMLHttpRequest;
+                            function newXHR() {
+                                const realXHR = new oldXHR();
+                                const oldOpen = realXHR.open;
+                                realXHR.open = function(method, url) {
+                                    // If it's a game file, route it through the proxy
+                                    if (url.includes('.wasm') || url.includes('.data')) {
+                                        url = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+                                    }
+                                    return oldOpen.apply(this, arguments);
+                                };
+                                return realXHR;
+                            }
+                            window.XMLHttpRequest = newXHR;
+                        })();
+
                         window.toggleNoclip = function() {
                             const engine = window.unityInstance || window.gameInstance;
                             if(engine) {
                                 engine.SendMessage('Player', 'SetCollision', false);
                                 engine.SendMessage('Player', 'SetGravity', 0);
-                                alert("NOCLIP & FLY ACTIVE");
-                            } else {
-                                console.log("Waiting for engine...");
-                                setTimeout(window.toggleNoclip, 2000);
-                            }
+                                alert("NOCLIP ONLINE");
+                            } else { setTimeout(window.toggleNoclip, 2000); }
                         };
-                        window.toggleNoclip();
                     <\/script>
                 `;
-                
-                html = html.replace('</body>', hackerScript + '</body>');
 
-                // 4. THE EXECUTION: Create the 'Identity Theft' page
-                const blob = new Blob([html], { type: 'text/html' });
-                const blobUrl = URL.createObjectURL(blob);
-                
-                // Redirect this window to the blob
-                window.location.replace(blobUrl);
+                moddedHtml = moddedHtml.replace('</body>', hijackScript + '</body>');
+
+                const blob = new Blob([moddedHtml], { type: 'text/html' });
+                window.location.replace(URL.createObjectURL(blob));
 
             } catch (e) {
-                document.body.innerHTML = "<h2 style='color:white;'>Proxy Failed. Try refreshing or use a different network.</h2>";
+                document.getElementById('loader').innerHTML = "PROTOCOL FAILURE: PROXY TIMEOUT";
             }
         })();
     </script>
