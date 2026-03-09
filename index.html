@@ -1,40 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Veck System v5 - Persistent</title>
+    <title>VECK_OS_V6</title>
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
-    <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
-        #secure-frame { width: 100%; height: 100%; border: none; }
-    </style>
 </head>
-<body>
-
-    <iframe 
-        id="secure-frame" 
-        src="https://veck.io/" 
-        sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock"
-    ></iframe>
-
+<body style="margin:0; background:#000;">
     <script>
-        console.log("SYSTEM PROTECTED: GEAR WILL NOT VANISH");
-        
-        // This loop tries to "reach in" every 2 seconds
-        setInterval(() => {
+        (async function() {
+            // 1. The Proxy - using a different one to avoid '403' errors
+            const proxy = "https://api.allorigins.win/get?url=";
+            const target = "https://veck.io/";
+
             try {
-                const frame = document.getElementById('secure-frame').contentWindow;
-                const engine = frame.unityInstance || frame.gameInstance;
-                if (engine) {
-                    // AUTO-ACTIVATE MODS
-                    engine.SendMessage('Player', 'SetGravity', 0);
-                    engine.SendMessage('Player', 'SetCollision', false);
-                    console.log("MODS PUSHED TO ENGINE");
-                }
-            } catch(e) {
-                // This will likely show a 'SecurityError', but the gear stays!
+                const response = await fetch(proxy + encodeURIComponent(target));
+                const data = await response.json();
+                let html = data.contents;
+
+                // 2. THE FIX: Force the game to find its 'Brain' on the REAL site
+                // This stops the 99% hang by pointing directly to the official files
+                html = html.replace('<head>', `<head><base href="https://veck.io/">`);
+
+                // 3. THE INJECTOR: This runs INSIDE the game's origin
+                const hackerScript = `
+                    <script>
+                        console.log("HACKER CORE LOADED");
+                        window.toggleNoclip = function() {
+                            const engine = window.unityInstance || window.gameInstance;
+                            if(engine) {
+                                engine.SendMessage('Player', 'SetCollision', false);
+                                engine.SendMessage('Player', 'SetGravity', 0);
+                                alert("NOCLIP & FLY ACTIVE");
+                            } else {
+                                console.log("Waiting for engine...");
+                                setTimeout(window.toggleNoclip, 2000);
+                            }
+                        };
+                        window.toggleNoclip();
+                    <\/script>
+                `;
+                
+                html = html.replace('</body>', hackerScript + '</body>');
+
+                // 4. THE EXECUTION: Create the 'Identity Theft' page
+                const blob = new Blob([html], { type: 'text/html' });
+                const blobUrl = URL.createObjectURL(blob);
+                
+                // Redirect this window to the blob
+                window.location.replace(blobUrl);
+
+            } catch (e) {
+                document.body.innerHTML = "<h2 style='color:white;'>Proxy Failed. Try refreshing or use a different network.</h2>";
             }
-        }, 2000);
+        })();
     </script>
 </body>
 </html>
