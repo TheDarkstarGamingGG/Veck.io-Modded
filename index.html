@@ -1,65 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Veck.io - Advanced Test Environment</title>
-    <style>
-        body { background: #000; color: #0f0; font-family: monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        button { background: #0f0; color: #000; border: none; padding: 25px 50px; font-size: 22px; font-weight: bold; cursor: pointer; border-radius: 12px; box-shadow: 0 0 30px #0f0; transition: 0.2s; }
-        button:hover { box-shadow: 0 0 50px #0f0; transform: scale(1.05); }
-        .info { margin-top: 20px; color: #888; text-align: center; font-size: 14px; }
-    </style>
+    <title>Veck.io System Bypass</title>
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
 </head>
 <body>
-
-    <h1>VECK_SYSTEM_v4</h1>
-    <button onclick="launchCloak()">INJECT & LAUNCH</button>
-    <div class="info">Status: Ready | Origin: Masked</div>
+    <div id="game-root"></div>
 
     <script>
-        function launchCloak() {
-            // 1. Create a "Clean" window with no history or origin
-            const win = window.open('about:blank', '_blank');
-            if (!win) {
-                alert("Pop-up blocked! Allow pop-ups to run the exploit.");
-                return;
-            }
+        // THE INJECTOR: This function mimics what Tampermonkey does
+        async function injectAndLoad() {
+            const proxy = "https://api.allorigins.win/get?url=";
+            const target = encodeURIComponent("https://veck.io/");
 
-            // 2. Define the content to be injected
-            const content = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Veck.io (MODDED)</title>
-                    <style>body,iframe {margin:0; width:100vw; height:100vh; border:none; overflow:hidden;}</style>
-                    <script src="https://cdn.jsdelivr.net/npm/eruda"><\/script>
-                    <script>eruda.init();<\/script>
-                </head>
-                <body>
-                    <iframe src="https://veck.io/" id="game-frame" style="width:100%; height:100%;"></iframe>
-                    <script>
-                        // Loop to wait for the game and inject hacks
-                        setInterval(() => {
-                            try {
-                                const frame = document.getElementById('game-frame').contentWindow;
-                                const engine = frame.unityInstance || frame.gameInstance;
-                                if (engine) {
-                                    console.log("ENGINE FOUND. RUNNING AUTO-MODS...");
-                                    // These will run every second to ensure they stay active
-                                    engine.SendMessage('Player', 'SetGravity', 0);
-                                    engine.SendMessage('Player', 'SetCollision', false);
-                                }
-                            } catch(e) {}
-                        }, 2000);
-                    <\/script>
-                </body>
-                </html>
+            const response = await fetch(proxy + target);
+            const data = await response.json();
+            let html = data.contents;
+
+            // 1. FIX THE PATHS: Ensure the game can still find its 3D models
+            html = html.replace('<head>', `<head><base href="https://veck.io/">`);
+
+            // 2. THE TAMPERMONKEY REPLACEMENT: Inject our "Hack" script directly into the HTML
+            const hackerScript = `
+                <script>
+                    console.log("HACKER SCRIPT ACTIVE");
+                    
+                    // This function 'hooks' into the game engine
+                    window.activateCheats = function() {
+                        const engine = window.unityInstance || window.gameInstance;
+                        if (engine) {
+                            // FLY: Remove gravity
+                            engine.SendMessage('Player', 'SetGravity', 0);
+                            // NOCLIP: Disable the physics collider
+                            engine.SendMessage('Player', 'SetCollision', false);
+                            // INVISIBILITY: Disable the Renderer
+                            engine.SendMessage('Player', 'SetVisible', false);
+                            alert("Cheats Injected!");
+                        } else {
+                            setTimeout(window.activateCheats, 2000);
+                        }
+                    };
+                    window.activateCheats();
+                <\/script>
             `;
 
-            // 3. Write the content to the new window
-            win.document.open();
-            win.document.write(content);
-            win.document.close();
+            html = html.replace('</body>', hackerScript + '</body>');
+
+            // 3. EXECUTE: Turn the modded HTML into a "local" page
+            const blob = new Blob([html], { type: 'text/html' });
+            window.location.href = URL.createObjectURL(blob);
         }
+
+        injectAndLoad();
     </script>
 </body>
 </html>
